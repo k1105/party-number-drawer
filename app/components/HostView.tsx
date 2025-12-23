@@ -3,6 +3,7 @@
 import {useState, useEffect, useRef} from "react";
 import QRious from "qrious";
 import {IconQrCode, IconArrowRight, IconRotateCcw} from "./Icons";
+import {useSocket} from "../hooks/useSocket";
 import "../styles/animations.css";
 
 export default function HostView() {
@@ -11,10 +12,23 @@ export default function HostView() {
   const [isFinished, setIsFinished] = useState(false);
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
+  const {isConnected, participants, resetGame: socketResetGame, onQRScannedNotification} = useSocket();
+
   // Initialize 1-100
   useEffect(() => {
     resetGame();
   }, []);
+
+  // Listen for QR scanned notifications
+  useEffect(() => {
+    const cleanup = onQRScannedNotification?.((data) => {
+      console.log('QR scanned notification received:', data);
+      // Automatically generate next QR code
+      handleNext();
+    });
+
+    return cleanup;
+  }, [availableNumbers]);
 
   // Generate QR Code with URL
   useEffect(() => {
@@ -39,6 +53,7 @@ export default function HostView() {
     setAvailableNumbers(nums);
     setCurrentNumber(null);
     setIsFinished(false);
+    socketResetGame?.();
   };
 
   const handleNext = () => {
@@ -65,11 +80,14 @@ export default function HostView() {
             Party Lottery
           </h1>
           <p className="text-xs text-gray-400 mt-1">
-            {typeof window !== "undefined" &&
-            window.location.protocol === "file:"
-              ? "⚠️ ローカルファイルです。スマホで読み取るにはWebサーバーにアップしてください"
-              : "QRコードを読み取ると番号ページが開きます"}
+            QRコードを読み取ると番号ページが開きます
           </p>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-xs text-gray-500">
+              {isConnected ? 'リアルタイム接続中' : '接続待機中...'}
+            </span>
+          </div>
         </header>
 
         {/* Status Bar */}
@@ -98,6 +116,14 @@ export default function HostView() {
               <div className="bg-white p-2 rounded-lg shadow-sm">
                 <canvas ref={qrCanvasRef} className="rounded"></canvas>
               </div>
+              <p className="mt-4 text-sm font-semibold text-gray-400">
+                スキャンすると自動で次へ
+              </p>
+              <details className="mt-2 text-xs text-gray-400 cursor-pointer">
+                <summary className="list-none text-center hover:text-purple-600 transition-colors">
+                  (ホスト用確認: {currentNumber})
+                </summary>
+              </details>
             </div>
           ) : (
             <div className="text-center p-8 text-gray-400">
@@ -136,6 +162,50 @@ export default function HostView() {
             <IconRotateCcw className="w-4 h-4" />
             リセット
           </button>
+        </div>
+      </div>
+
+      {/* Participants List */}
+      <div className="mt-6 w-full max-w-md">
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 card-shadow">
+          <h3 className="text-lg font-bold text-gray-700 mb-3 flex items-center justify-between">
+            <span>参加者一覧</span>
+            <span className="text-sm font-normal text-gray-500">
+              {participants.length}人
+            </span>
+          </h3>
+
+          {participants.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-4">
+              まだ参加者がいません
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-hide">
+              {participants
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .map((participant) => (
+                  <div
+                    key={participant.number}
+                    className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 animate-fade-in"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm">
+                        {participant.number}
+                      </div>
+                      <span className="font-medium text-gray-800">
+                        {participant.name}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {new Date(participant.timestamp).toLocaleTimeString('ja-JP', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
