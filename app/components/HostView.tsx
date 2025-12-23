@@ -98,15 +98,6 @@ export default function HostView() {
               <div className="bg-white p-2 rounded-lg shadow-sm">
                 <canvas ref={qrCanvasRef} className="rounded"></canvas>
               </div>
-              <p className="mt-4 text-sm font-semibold text-gray-400">
-                スキャンして番号ページへ
-              </p>
-
-              <details className="mt-2 text-xs text-gray-400 cursor-pointer">
-                <summary className="list-none text-center hover:text-purple-600 transition-colors">
-                  (ホスト用確認: {currentNumber})
-                </summary>
-              </details>
             </div>
           ) : (
             <div className="text-center p-8 text-gray-400">
