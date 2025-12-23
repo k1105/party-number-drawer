@@ -1,14 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import QRious from 'qrious';
-import { IconQrCode, IconArrowRight, IconRotateCcw } from './Icons';
-import '../styles/animations.css';
+import {useState, useEffect, useRef} from "react";
+import QRious from "qrious";
+import {IconQrCode, IconArrowRight, IconRotateCcw} from "./Icons";
+import "../styles/animations.css";
 
 export default function HostView() {
   const [availableNumbers, setAvailableNumbers] = useState<number[]>([]);
   const [currentNumber, setCurrentNumber] = useState<number | null>(null);
-  const [history, setHistory] = useState<number[]>([]);
   const [isFinished, setIsFinished] = useState(false);
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -21,24 +20,23 @@ export default function HostView() {
   useEffect(() => {
     if (currentNumber !== null && qrCanvasRef.current) {
       // Build the URL for the current page + query parameter
-      const baseUrl = window.location.href.split('?')[0];
+      const baseUrl = window.location.href.split("?")[0];
       const targetUrl = `${baseUrl}?n=${currentNumber}`;
 
       new QRious({
         element: qrCanvasRef.current,
         value: targetUrl,
         size: 250,
-        level: 'M',
-        foreground: '#000000',
-        background: '#ffffff',
+        level: "M",
+        foreground: "#000000",
+        background: "#ffffff",
       });
     }
   }, [currentNumber]);
 
   const resetGame = () => {
-    const nums = Array.from({ length: 100 }, (_, i) => i + 1);
+    const nums = Array.from({length: 100}, (_, i) => i + 1);
     setAvailableNumbers(nums);
-    setHistory([]);
     setCurrentNumber(null);
     setIsFinished(false);
   };
@@ -52,7 +50,6 @@ export default function HostView() {
     const pickedNumber = availableNumbers[randomIndex];
 
     setCurrentNumber(pickedNumber);
-    setHistory((prev) => [pickedNumber, ...prev]);
 
     const newAvailable = availableNumbers.filter((n) => n !== pickedNumber);
     setAvailableNumbers(newAvailable);
@@ -68,9 +65,10 @@ export default function HostView() {
             Party Lottery
           </h1>
           <p className="text-xs text-gray-400 mt-1">
-            {typeof window !== 'undefined' && window.location.protocol === 'file:'
-              ? '⚠️ ローカルファイルです。スマホで読み取るにはWebサーバーにアップしてください'
-              : 'QRコードを読み取ると番号ページが開きます'}
+            {typeof window !== "undefined" &&
+            window.location.protocol === "file:"
+              ? "⚠️ ローカルファイルです。スマホで読み取るにはWebサーバーにアップしてください"
+              : "QRコードを読み取ると番号ページが開きます"}
           </p>
         </header>
 
@@ -83,7 +81,7 @@ export default function HostView() {
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div
               className="bg-purple-600 h-2.5 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
+              style={{width: `${progress}%`}}
             ></div>
           </div>
         </div>
@@ -130,42 +128,23 @@ export default function HostView() {
             className={`w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition-all btn-press flex items-center justify-center gap-2
                     ${
                       isFinished
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-200'
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-200"
                     }`}
           >
-            {availableNumbers.length === 100 ? 'スタート' : '次へ (新しい番号)'}
+            {availableNumbers.length === 100 ? "スタート" : "次へ (新しい番号)"}
             <IconArrowRight className="w-5 h-5" />
           </button>
 
           <button
             onClick={() => {
-              if (confirm('リセットしますか?')) resetGame();
+              if (confirm("リセットしますか?")) resetGame();
             }}
             className="w-full py-3 rounded-xl text-gray-500 bg-gray-100 hover:bg-gray-200 font-semibold text-sm transition-colors btn-press flex items-center justify-center gap-2"
           >
             <IconRotateCcw className="w-4 h-4" />
             リセット
           </button>
-        </div>
-      </div>
-
-      <div className="mt-6 w-full max-w-md">
-        <p className="text-white/80 text-sm mb-2 font-medium ml-2">
-          最近出た番号:
-        </p>
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {history.length === 0 && (
-            <span className="text-white/50 text-sm ml-2">履歴なし</span>
-          )}
-          {history.map((num, idx) => (
-            <div
-              key={idx}
-              className="bg-white/20 backdrop-blur-md text-white px-3 py-1.5 rounded-lg text-sm font-mono border border-white/10 shrink-0 animate-fade-in"
-            >
-              {num}
-            </div>
-          ))}
         </div>
       </div>
     </div>
