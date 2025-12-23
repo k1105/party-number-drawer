@@ -32,13 +32,13 @@
   transform: scale(0.95);
 }
 
-.gradient-bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.christmas-bg {
+  background: linear-gradient(135deg, #c41e3a 0%, #165b33 50%, #c41e3a 100%);
 }
 
 .card-shadow {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 25px -5px rgba(196, 30, 58, 0.2),
+    0 10px 10px -5px rgba(22, 91, 51, 0.1);
 }
 
 .scrollbar-hide::-webkit-scrollbar {
