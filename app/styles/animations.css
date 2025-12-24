@@ -33,7 +33,19 @@
 }
 
 .christmas-bg {
-  background: linear-gradient(135deg, #c41e3a 0%, #165b33 50%, #c41e3a 100%);
+  background-color: #e6e6e6;
+  background-image: url("/background.jpg");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.result-bg {
+  background-color: #e6e6e6;
+  background-image: url("/background-sp.jpg");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .card-shadow {

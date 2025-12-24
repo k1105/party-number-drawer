@@ -57,49 +57,39 @@ export default function HostView() {
   const progress = ((100 - availableNumbers.length) / 100) * 100;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 christmas-bg text-gray-800">
-      <div className="bg-white rounded-3xl p-6 w-full max-w-md card-shadow flex flex-col items-center space-y-6 relative overflow-hidden">
-        <header className="w-full text-center border-b border-red-100 pb-4">
-          <h1 className="text-2xl font-bold text-red-600 tracking-wider">
-            🎄 Christmas Lottery 🎅
-          </h1>
-          <p className="text-xs text-green-600 mt-1">
-            {typeof window !== "undefined" &&
-            window.location.protocol === "file:"
-              ? "⚠️ ローカルファイルです。スマホで読み取るにはWebサーバーにアップしてください"
-              : "QRコードを読み取ると番号ページが開きます"}
-          </p>
-        </header>
-
+    <div className="flex flex-col items-center justify-center p-4 text-black">
+      <div className="bg-white p-6 w-full max-w-md flex flex-col items-center space-y-6 relative overflow-hidden">
         {/* Status Bar */}
         <div className="w-full space-y-1">
-          <div className="flex justify-between text-xs font-medium text-gray-600">
+          <div className="flex justify-between text-xs font-medium text-black">
             <span>使用済み: {100 - availableNumbers.length}</span>
             <span>残り: {availableNumbers.length}</span>
           </div>
-          <div className="w-full bg-green-100 rounded-full h-2.5">
+          <div className="w-full bg-gray-200 h-3">
             <div
-              className="bg-gradient-to-r from-red-500 to-green-600 h-2.5 rounded-full transition-all duration-500 ease-out"
+              className="bg-black h-full transition-all duration-500 ease-out"
               style={{width: `${progress}%`}}
             ></div>
           </div>
         </div>
 
         {/* QR Display */}
-        <div className="flex flex-col items-center justify-center min-h-[280px] w-full bg-red-50 rounded-xl border-2 border-dashed border-red-200 relative">
+        <div className="flex flex-col items-center justify-center min-h-[280px] w-full bg-white relative">
           {isFinished ? (
             <div className="text-center p-4">
-              <h2 className="text-3xl font-bold text-red-600 mb-2">🎉 終了!</h2>
-              <p className="text-green-600">全ての番号が出ました</p>
+              <h2 className="text-3xl font-bold text-accent-red mb-2">
+                🎉 終了!
+              </h2>
+              <p className="text-black">全ての番号が出ました</p>
             </div>
           ) : currentNumber ? (
             <div className="flex flex-col items-center animate-fade-in">
-              <div className="bg-white p-2 rounded-lg shadow-sm">
-                <canvas ref={qrCanvasRef} className="rounded"></canvas>
+              <div className="bg-white p-2">
+                <canvas ref={qrCanvasRef}></canvas>
               </div>
             </div>
           ) : (
-            <div className="text-center p-8 text-red-400">
+            <div className="text-center p-8 text-black/70">
               <IconQrCode className="w-16 h-16 mx-auto mb-2 opacity-50" />
               <p>
                 「次へ」を押して
@@ -115,14 +105,16 @@ export default function HostView() {
           <button
             onClick={handleNext}
             disabled={isFinished}
-            className={`w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition-all btn-press flex items-center justify-center gap-2
+            className={`w-full py-4 text-white font-bold text-lg transform transition-all btn-press flex items-center justify-center gap-2
                     ${
                       isFinished
                         ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-gradient-to-r from-red-600 to-green-600 hover:from-red-700 hover:to-green-700 shadow-red-200"
+                        : "bg-black hover:bg-gray-800"
                     }`}
           >
-            {availableNumbers.length === 100 ? "🎄 スタート" : "🎁 次へ (新しい番号)"}
+            {availableNumbers.length === 100
+              ? "🎄 スタート"
+              : "🎁 次へ (新しい番号)"}
             <IconArrowRight className="w-5 h-5" />
           </button>
 
@@ -130,7 +122,7 @@ export default function HostView() {
             onClick={() => {
               if (confirm("リセットしますか?")) resetGame();
             }}
-            className="w-full py-3 rounded-xl text-green-700 bg-green-50 hover:bg-green-100 font-semibold text-sm transition-colors btn-press flex items-center justify-center gap-2 border border-green-200"
+            className="w-full py-3 text-black bg-white hover:bg-gray-100 font-semibold text-sm transition-colors btn-press flex items-center justify-center gap-2"
           >
             <IconRotateCcw className="w-4 h-4" />
             リセット
