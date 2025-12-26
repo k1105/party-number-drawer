@@ -237,12 +237,6 @@ export default function ResultsRevealView({
             </button>
           ) : (
             <div className="w-full max-w-md space-y-4">
-              <div className="text-center py-4">
-                <p className="text-2xl font-bold text-black mb-2">🎉 完了!</p>
-                <p className="text-sm text-black/70">
-                  全員の結果が開示されました
-                </p>
-              </div>
               <button
                 onClick={() => {
                   if (confirm("同じメンバーでもう一度やり直しますか？"))
