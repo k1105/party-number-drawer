@@ -2,7 +2,7 @@
 
 import {useState, useEffect, useRef} from "react";
 import QRious from "qrious";
-import {IconQrCode, IconArrowRight, IconRotateCcw} from "./Icons";
+import {Icon} from "@iconify/react";
 import "../styles/animations.css";
 
 export default function HostView() {
@@ -90,7 +90,10 @@ export default function HostView() {
             </div>
           ) : (
             <div className="text-center p-8 text-black/70">
-              <IconQrCode className="w-16 h-16 mx-auto mb-2 opacity-50" />
+              <Icon
+                icon="mdi:qrcode"
+                className="w-16 h-16 mx-auto mb-2 opacity-50"
+              />
               <p>
                 「次へ」を押して
                 <br />
@@ -115,7 +118,7 @@ export default function HostView() {
             {availableNumbers.length === 100
               ? "🎄 スタート"
               : "🎁 次へ (新しい番号)"}
-            <IconArrowRight className="w-5 h-5" />
+            <Icon icon="mdi:arrow-right" className="w-5 h-5" />
           </button>
 
           <button
@@ -124,7 +127,7 @@ export default function HostView() {
             }}
             className="w-full py-3 text-black bg-white hover:bg-gray-100 font-semibold text-sm transition-colors btn-press flex items-center justify-center gap-2"
           >
-            <IconRotateCcw className="w-4 h-4" />
+            <Icon icon="mdi:refresh" className="w-4 h-4" />
             リセット
           </button>
         </div>
