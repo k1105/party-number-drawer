@@ -27,7 +27,11 @@ function AppContent() {
   if (viewMode === "loading") return null;
 
   return (
-    <div className={`min-h-screen flex items-center justify-center md:justify-end md:pr-8 ${viewMode === "result" ? "result-bg" : "christmas-bg"}`}>
+    <div
+      className={`min-h-screen flex items-center justify-center md:justify-end md:pr-8 ${
+        viewMode === "result" ? "result-bg" : "christmas-bg"
+      }`}
+    >
       {viewMode === "result" && targetNumber ? (
         <ResultView number={targetNumber} />
       ) : (
