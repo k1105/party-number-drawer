@@ -13,6 +13,9 @@ interface ResultsRevealViewProps {
   assignments: UserAssignment[];
   onReset: () => void;
   userNames: string[];
+  onRevealStart?: () => void;
+  onRevealNext?: () => void;
+  revealedCountExternal?: number;
 }
 
 interface Topic {
@@ -22,18 +25,17 @@ interface Topic {
 
 export default function ResultsRevealView({
   assignments,
-  onReset,
+  revealedCountExternal = -1,
 }: ResultsRevealViewProps) {
-  const [revealedCount, setRevealedCount] = useState(-1);
+  const revealedCount = revealedCountExternal;
   const [topics, setTopics] = useState<Topic[]>([]);
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
   const [userOrder, setUserOrder] = useState("特になし");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Sort assignments by number in ascending order (smallest on the left, largest on the right)
-  const sortedAssignments = [...assignments].sort(
-    (a, b) => a.number - b.number
-  );
+  // Keep assignments in registration order (no sorting by number)
+  // We'll reveal in reverse order (largest numbers first) but display in registration order
+  const sortedAssignments = assignments;
 
   // Generate topics on component mount
   React.useEffect(() => {
@@ -71,15 +73,13 @@ export default function ResultsRevealView({
     }
   };
 
-  const handleStart = () => {
-    setRevealedCount(0);
-  };
-
-  const revealNext = () => {
-    if (revealedCount < sortedAssignments.length) {
-      setRevealedCount((prev) => prev + 1);
-    }
-  };
+  // Create a reveal order array: indices sorted by number (largest to smallest)
+  const revealOrder = React.useMemo(() => {
+    return sortedAssignments
+      .map((assignment, index) => ({index, number: assignment.number}))
+      .sort((a, b) => b.number - a.number)
+      .map((item) => item.index);
+  }, [sortedAssignments]);
 
   const handlePreviousTopic = () => {
     setCurrentTopicIndex((prev) => (prev - 1 + topics.length) % topics.length);
@@ -94,53 +94,54 @@ export default function ResultsRevealView({
   };
 
   const currentTopic = topics[currentTopicIndex]?.theme || "読み込み中...";
-  const allRevealed = revealedCount === sortedAssignments.length;
 
-  // Not started yet - initial screen
+  // Not started yet - initial screen (Topic selection)
   if (revealedCount === -1) {
     return (
-      <div className="flex flex-col items-center justify-center p-4 text-black w-full">
-        <div className="bg-white p-8 w-full max-w-2xl text-center space-y-6">
+      <div className="flex items-center justify-center p-8 w-full h-full">
+        <div className="bg-white border-2 border-black p-12 w-full max-w-3xl">
           {/* Topic Display with Navigation */}
-          <div className="border-4 border-black p-6 bg-white">
-            <div className="text-xs font-bold text-black/50 mb-2">お題</div>
-            <div className="flex items-center justify-between gap-4">
+          <div className="mb-8">
+            <div className="text-xs font-bold text-black/50 uppercase tracking-wider mb-4">
+              お題
+            </div>
+            <div className="border-4 border-black p-8 bg-white min-h-[120px] flex items-center">
               <button
                 onClick={handlePreviousTopic}
                 disabled={isGenerating || topics.length === 0}
-                className="p-2 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-3 hover:bg-black/5 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
                 aria-label="前のお題"
               >
-                <Icon icon="mdi:chevron-left" className="w-6 h-6" />
+                <Icon icon="mdi:chevron-left" className="w-8 h-8" />
               </button>
-              <div className="flex-1 text-center">
-                <div className="text-2xl font-bold text-black min-h-[2em] flex items-center justify-center">
+              <div className="flex-1 text-center px-4">
+                <div className="text-3xl font-bold text-black min-h-[1.5em] flex items-center justify-center">
                   {isGenerating ? (
-                    <span className="text-base text-black/50">生成中...</span>
+                    <span className="text-lg text-black/50">生成中...</span>
                   ) : (
                     currentTopic
                   )}
                 </div>
-                {topics.length > 0 && (
-                  <div className="text-xs text-black/40 mt-2">
-                    {currentTopicIndex + 1} / {topics.length}
-                  </div>
-                )}
               </div>
               <button
                 onClick={handleNextTopic}
                 disabled={isGenerating || topics.length === 0}
-                className="p-2 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-3 hover:bg-black/5 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
                 aria-label="次のお題"
               >
-                <Icon icon="mdi:chevron-right" className="w-6 h-6" />
+                <Icon icon="mdi:chevron-right" className="w-8 h-8" />
               </button>
             </div>
+            {topics.length > 0 && (
+              <div className="text-xs text-black/40 text-center mt-3">
+                {currentTopicIndex + 1} / {topics.length}
+              </div>
+            )}
           </div>
 
           {/* User Order Input */}
-          <div className="w-full">
-            <label className="block text-xs font-bold text-black/70 mb-2">
+          <div className="mb-6">
+            <label className="block text-xs font-bold text-black/50 uppercase tracking-wider mb-3">
               追加オーダー（任意）
             </label>
             <input
@@ -148,7 +149,7 @@ export default function ResultsRevealView({
               value={userOrder}
               onChange={(e) => setUserOrder(e.target.value)}
               placeholder="例：食べ物に関するお題がいい"
-              className="w-full px-4 py-3 border-2 border-black/20 focus:border-black outline-none text-black"
+              className="w-full px-4 py-3 border-2 border-black/20 focus:border-black outline-none text-black transition-colors"
               disabled={isGenerating}
             />
           </div>
@@ -157,98 +158,62 @@ export default function ResultsRevealView({
           <button
             onClick={handleRegenerate}
             disabled={isGenerating}
-            className="w-full py-3 text-black bg-white hover:bg-gray-100 font-semibold border-2 border-black transition-colors btn-press flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-white hover:bg-black/5 border-2 border-black font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Icon icon="mdi:refresh" className="w-4 h-4" />
-            {isGenerating ? "生成中..." : "再生成"}
+            <Icon icon="mdi:refresh" className="w-5 h-5" />
+            {isGenerating ? "生成中..." : "お題を再生成"}
           </button>
-
-          {/* Action Buttons */}
-          <div className="space-y-3">
-            <button
-              onClick={handleStart}
-              className="w-full py-4 text-white bg-black hover:bg-gray-800 font-bold text-lg transform transition-all btn-press flex items-center justify-center gap-2"
-            >
-              🎁 結果を見る
-            </button>
-          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 text-black w-full min-h-screen">
-      <div className="bg-white p-8 w-full max-w-6xl">
+    <div className="flex items-center justify-center p-8 w-full h-full">
+      <div className="bg-white border-2 border-black p-12 w-full max-w-5xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-black mb-2">🎉 結果発表</h1>
-          <div className="text-sm text-black/60">
-            {revealedCount} / {sortedAssignments.length} 人開示済み
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-black mb-3">結果発表</h1>
+          <div className="text-sm text-black/50">
+            開票済み: {revealedCount} / {sortedAssignments.length} 人
           </div>
         </div>
 
-        {/* Grid Layout - Centered */}
-        <div className="flex justify-center mb-8">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-fit">
-            {sortedAssignments.map((assignment, index) => {
-              // Reveal from right to left (largest numbers first)
-              const revealIndex = sortedAssignments.length - 1 - index;
-              const isRevealed = revealIndex < revealedCount;
-              return (
-                <div
-                  key={index}
-                  className={`relative aspect-square w-32 md:w-36 lg:w-40 border-4 border-black flex flex-col items-center justify-center transition-all duration-500 ${
-                    isRevealed ? "bg-white" : "bg-black/5"
-                  }`}
-                >
-                  {/* User Name - Hidden until revealed */}
-                  <div className="text-sm md:text-base font-bold text-black mb-2">
-                    {isRevealed ? `${assignment.name}さん` : "???"}
-                  </div>
-
-                  {/* Number or Hidden */}
-                  {isRevealed ? (
-                    <div className="text-4xl md:text-5xl font-black text-accent-red animate-pop-in">
-                      {assignment.number}
-                    </div>
-                  ) : (
-                    <div className="text-4xl md:text-5xl">?</div>
-                  )}
-
-                  {/* Position indicator (順位) */}
-                  <div className="absolute top-1 left-1 text-xs font-bold text-black/30">
-                    {index + 1}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="flex flex-col items-center gap-4">
-          {!allRevealed ? (
-            <button
-              onClick={revealNext}
-              className="w-full max-w-md py-4 text-white bg-black hover:bg-gray-800 font-bold text-lg transform transition-all btn-press"
-            >
-              🎁 次を開く ({revealedCount + 1}人目)
-            </button>
-          ) : (
-            <div className="w-full max-w-md space-y-4">
-              <button
-                onClick={() => {
-                  if (confirm("同じメンバーでもう一度やり直しますか？"))
-                    onReset();
-                }}
-                className="w-full py-3 text-black bg-white hover:bg-gray-100 font-semibold border-2 border-black transition-colors btn-press flex items-center justify-center gap-2"
+        {/* Grid Layout - 3 Column Fixed */}
+        <div className="grid grid-cols-3 gap-4">
+          {sortedAssignments.map((assignment, index) => {
+            // Check if this assignment has been revealed
+            // revealOrder contains indices in the order they should be revealed
+            const revealPosition = revealOrder.indexOf(index);
+            const isRevealed = revealPosition < revealedCount;
+            return (
+              <div
+                key={index}
+                className={`relative aspect-square border-4 border-black flex flex-col items-center justify-center transition-all duration-500 ${
+                  isRevealed ? "bg-white" : "bg-black/5"
+                }`}
               >
-                <Icon icon="mdi:refresh" className="w-4 h-4" />
-                もう一度
-              </button>
-            </div>
-          )}
+                {/* Position indicator (registration order) */}
+                <div className="absolute top-2 left-2 text-xs font-bold text-black/30">
+                  #{index + 1}
+                </div>
+
+                {/* User Name - Hidden until revealed */}
+                <div className="text-base font-bold text-black mb-3">
+                  {isRevealed ? assignment.name : "???"}
+                </div>
+
+                {/* Number or Hidden */}
+                {isRevealed ? (
+                  <div className="text-6xl font-black text-black animate-pop-in">
+                    {assignment.number}
+                  </div>
+                ) : (
+                  <div className="text-6xl font-black text-black/20">?</div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, useEffect, useRef} from "react";
+import {useState, useEffect} from "react";
 import QRious from "qrious";
 import {Icon} from "@iconify/react";
 import "../styles/animations.css";
@@ -12,180 +12,157 @@ interface UserAssignment {
 
 interface QRDistributionViewProps {
   userNames: string[];
-  onComplete: (assignments: UserAssignment[]) => void;
+  onAssignmentsChange?: (assignments: UserAssignment[]) => void;
+  onUserAdd: (userName: string) => void;
 }
 
 export default function QRDistributionView({
   userNames,
-  onComplete,
+  onAssignmentsChange,
+  onUserAdd,
 }: QRDistributionViewProps) {
   const [assignments, setAssignments] = useState<UserAssignment[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [availableNumbers, setAvailableNumbers] = useState<number[]>([]);
-  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [currentName, setCurrentName] = useState("");
 
-  // Initialize available numbers
+  // Initialize available numbers only once
   useEffect(() => {
     const nums = Array.from({length: 100}, (_, i) => i + 1);
     setAvailableNumbers(nums);
   }, []);
 
-  // Generate QR Code
+  // Auto-assign numbers to new users only
   useEffect(() => {
-    if (assignments[currentIndex] && qrCanvasRef.current) {
-      const baseUrl = window.location.href.split("?")[0];
-      const targetUrl = `${baseUrl}?n=${assignments[currentIndex].number}`;
+    if (userNames.length === 0) return;
+    if (availableNumbers.length === 0) return;
 
-      new QRious({
-        element: qrCanvasRef.current,
-        value: targetUrl,
-        size: 250,
-        level: "M",
-        foreground: "#000000",
-        background: "#ffffff",
-      });
+    // Check if there are new users that need assignments
+    const needsAssignment = userNames.length > assignments.length;
+    if (!needsAssignment) return;
+
+    const newAssignments = [...assignments];
+    const newAvailableNumbers = [...availableNumbers];
+
+    // Only assign numbers to new users (from assignments.length onwards)
+    for (let index = assignments.length; index < userNames.length; index++) {
+      if (newAvailableNumbers.length > 0) {
+        const randomIndex = Math.floor(
+          Math.random() * newAvailableNumbers.length
+        );
+        const pickedNumber = newAvailableNumbers[randomIndex];
+
+        newAssignments[index] = {
+          name: userNames[index],
+          number: pickedNumber,
+        };
+
+        newAvailableNumbers.splice(randomIndex, 1);
+      }
     }
-  }, [currentIndex, assignments]);
 
-  // Auto-assign numbers when component mounts or when moving to a new user
+    setAssignments(newAssignments);
+    setAvailableNumbers(newAvailableNumbers);
+  }, [userNames.length, availableNumbers.length]);
+
+  // Generate QR codes for all users
   useEffect(() => {
-    // If current user doesn't have an assignment yet, assign one
-    if (!assignments[currentIndex] && availableNumbers.length > 0) {
-      const randomIndex = Math.floor(Math.random() * availableNumbers.length);
-      const pickedNumber = availableNumbers[randomIndex];
+    assignments.forEach((assignment, index) => {
+      const canvas = document.getElementById(
+        `qr-canvas-${index}`
+      ) as HTMLCanvasElement;
+      if (canvas && assignment) {
+        const baseUrl = window.location.href.split("?")[0];
+        const targetUrl = `${baseUrl}?n=${assignment.number}`;
 
-      const newAssignment: UserAssignment = {
-        name: userNames[currentIndex],
-        number: pickedNumber,
-      };
+        new QRious({
+          element: canvas,
+          value: targetUrl,
+          size: 200,
+          level: "M",
+          foreground: "#000000",
+          background: "#ffffff",
+        });
+      }
+    });
 
-      setAssignments((prev) => {
-        const updated = [...prev];
-        updated[currentIndex] = newAssignment;
-        return updated;
-      });
-      setAvailableNumbers((prev) => prev.filter((n) => n !== pickedNumber));
+    // Notify parent of assignments change
+    if (onAssignmentsChange && assignments.length > 0) {
+      onAssignmentsChange(assignments);
     }
-  }, [currentIndex, assignments, availableNumbers, userNames]);
+  }, [assignments, onAssignmentsChange]);
 
-  const handleNext = () => {
-    if (currentIndex < userNames.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+  const handleAddUser = () => {
+    if (currentName.trim() !== "") {
+      onUserAdd(currentName.trim());
+      setCurrentName("");
     }
   };
-
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  const handleFinish = () => {
-    onComplete(assignments.filter((a) => a !== undefined));
-  };
-
-  const currentUser = userNames[currentIndex];
-  const currentAssignment = assignments[currentIndex];
-  const isAssigned = currentAssignment !== undefined;
-  const isLastUser = currentIndex === userNames.length - 1;
-  const allAssigned = assignments.filter((a) => a !== undefined).length === userNames.length;
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 text-black">
-      <div className="bg-white p-6 w-full max-w-md flex flex-col items-center space-y-6">
-        {/* Progress Bar */}
-        <div className="w-full space-y-1">
-          <div className="flex justify-between text-xs font-medium text-black">
-            <span>
-              進行: {currentIndex + 1} / {userNames.length}
-            </span>
-            <span>配布済み: {assignments.length}</span>
-          </div>
-          <div className="w-full bg-gray-200 h-3">
-            <div
-              className="bg-black h-full transition-all duration-500 ease-out"
-              style={{
-                width: `${(assignments.length / userNames.length) * 100}%`,
+    <div className="h-full flex flex-col p-8">
+      {/* QR Code Grid - 3 Column Layout with Input Card */}
+      <div className="grid grid-cols-3 gap-4 overflow-y-auto">
+        {/* Input Card - First position */}
+        <div className="flex flex-col items-center justify-center border-2 border-black p-4 bg-white aspect-square">
+          <div className="w-full flex flex-col gap-3">
+            <input
+              type="text"
+              value={currentName}
+              onChange={(e) => setCurrentName(e.target.value)}
+              placeholder="名前を入力"
+              className="w-full px-3 py-2 border-2 border-black/20 focus:border-black outline-none text-black text-sm transition-colors"
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  handleAddUser();
+                }
               }}
-            ></div>
-          </div>
-        </div>
-
-        {/* User Name Display */}
-        <div className="w-full text-center py-4 bg-black text-white">
-          <div className="text-sm font-medium mb-1">参加者</div>
-          <div className="text-2xl font-bold">{currentUser}さん</div>
-        </div>
-
-        {/* QR Display */}
-        <div className="flex flex-col items-center justify-center min-h-[280px] w-full bg-white relative">
-          {isAssigned ? (
-            <div className="flex flex-col items-center animate-fade-in">
-              <div className="bg-white p-2">
-                <canvas ref={qrCanvasRef}></canvas>
-              </div>
-              <div className="mt-4 text-sm text-black/70">
-                QRコードをスキャンしてください
-              </div>
-            </div>
-          ) : (
-            <div className="text-center p-8 text-black/70">
-              <Icon
-                icon="mdi:qrcode"
-                className="w-16 h-16 mx-auto mb-2 opacity-50 animate-pulse"
-              />
-              <p>QRコードを生成中...</p>
-            </div>
-          )}
-        </div>
-
-        {/* Controls */}
-        <div className="w-full space-y-3 pt-2">
-          <div className="flex gap-3">
+            />
             <button
-              onClick={handlePrevious}
-              disabled={currentIndex === 0}
-              className={`flex-1 py-4 font-bold text-lg transform transition-all btn-press flex items-center justify-center gap-2
-                ${
-                  currentIndex === 0
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-white text-black border-2 border-black hover:bg-gray-100"
-                }`}
+              onClick={handleAddUser}
+              className="w-full py-2 bg-black text-white hover:bg-gray-800 font-medium transition-all flex items-center justify-center gap-2"
             >
-              <Icon icon="mdi:arrow-left" className="w-5 h-5" />
-              前へ
+              <Icon icon="mdi:plus" className="w-4 h-4" />
+              追加
             </button>
-
-            {!isLastUser ? (
-              <button
-                onClick={handleNext}
-                disabled={!isAssigned}
-                className={`flex-1 py-4 font-bold text-lg transform transition-all btn-press flex items-center justify-center gap-2
-                  ${
-                    !isAssigned
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "text-white bg-black hover:bg-gray-800"
-                  }`}
-              >
-                次へ
-                <Icon icon="mdi:arrow-right" className="w-5 h-5" />
-              </button>
-            ) : (
-              <button
-                onClick={handleFinish}
-                disabled={!allAssigned}
-                className={`flex-1 py-4 font-bold text-lg transform transition-all btn-press flex items-center justify-center gap-2
-                  ${
-                    !allAssigned
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "text-white bg-black hover:bg-gray-800"
-                  }`}
-              >
-                🎉 完了
-              </button>
-            )}
           </div>
         </div>
+
+        {/* QR Code Cards */}
+        {userNames.map((name, index) => {
+          const assignment = assignments[index];
+          return (
+            <div
+              key={index}
+              className="relative flex flex-col items-center border-2 border-black bg-white aspect-square overflow-hidden group"
+            >
+              {/* Name Badge */}
+              <div className="absolute top-0 left-0 right-0 bg-black text-white px-3 py-2 text-center">
+                <div className="text-s font-bold uppercase tracking-wider">
+                  {name}
+                </div>
+              </div>
+
+              {/* QR Code Area */}
+              {assignment ? (
+                <div className="flex-1 flex flex-col items-center justify-center pt-10 pb-4 px-4">
+                  <div className="bg-white p-2 border border-black/10">
+                    <canvas id={`qr-canvas-${index}`}></canvas>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center pt-10">
+                  <div className="flex flex-col items-center gap-2">
+                    <Icon
+                      icon="mdi:loading"
+                      className="w-8 h-8 animate-spin text-black/30"
+                    />
+                    <div className="text-xs text-black/30">生成中</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
